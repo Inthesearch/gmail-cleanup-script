@@ -1,0 +1,61 @@
+/**
+ * Gmail Cleanup Script
+ * 
+ * This script automatically moves Gmail conversations (threads) to Trash
+ * if they have specific labels and the last message in the thread is older
+ * than the specified number of days (maxAge).
+ * 
+ * How to use:
+ * 1. Update the `labelRules` array with your Gmail labels and max age in days.
+ *    - For nested labels, use the full path with slashes, e.g., "parent/child".
+ * 2. Save the script in Google Apps Script editor.
+ * 3. Run the function `deleteOldEmails()` manually once to authorize permissions.
+ * 4. (Optional) Set up a time-driven trigger to automate cleanup:
+ * 
+ *    Steps to add trigger:
+ *    - In Google Apps Script editor, click the "Triggers" icon (clock symbol) on the left.
+ *    - Click "+ Add Trigger" button at bottom right.
+ *    - Choose:
+ *        * Function to run: deleteOldEmails
+ *        * Deployment: Head
+ *        * Event source: Time-driven
+ *        * Type of time-based trigger: Day timer (or your preferred interval)
+ *        * Time of day: Select your preferred time window
+ *    - Save the trigger.
+ * 
+ * 5. The script will then run automatically on the schedule,
+ *    deleting conversations older than the maxAge under each label.
+ * 
+ * Notes:
+ * - Deleted emails are moved to Trash; Gmail permanently deletes them after 30 days.
+ * - Be careful with maxAge values to avoid deleting recent emails.
+ */
+
+
+function deleteOldEmails() {
+  
+  var labelRules = [
+// add label name, and no of days after which email should get deleted
+    {name: "label1", maxAge: 15},
+    {name: "label2", maxAge: 7}
+     ];
+
+  for(var i= 0; i < labelRules.length; i++){
+    var rule = labelRules[i];
+    var label = GmailApp.getUserLabelByName(rule.name);
+
+    if(!label) continue;
+
+    var threads = label.getThreads();
+
+    for (var j = 0; j < threads.length; j++){
+      var thread = threads[j];
+      var ageDays = (new Date() - thread.getLastMessageDate())/(1000*60*60*24);
+      
+      if(ageDays > rule.maxAge){
+        thread.moveToTrash();
+      }
+    } 
+  }
+
+}
